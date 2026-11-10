@@ -27,11 +27,8 @@ impl NestMem {
                 sleep(Duration::from_millis(10));
                 loop {
                     if let Some(db) = worker_weak.upgrade() {
-                        println!("200");
                         db.root.cleanup();
-                        println!("300");
                     } else {
-                        println!("2");
                         break;
                     }
                     sleep(Duration::from_millis(100));
