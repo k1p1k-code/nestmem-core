@@ -27,7 +27,9 @@ impl NestMem {
                 sleep(Duration::from_millis(10));
                 loop {
                     if let Some(db) = worker_weak.upgrade() {
+                        println!("200");
                         db.root.cleanup();
+                        println!("300");
                     } else {
                         println!("2");
                         break;
@@ -63,7 +65,7 @@ use super::*;
         let ttl = SystemTtl::new(storage::ttl::TimeTtl::Seconds(3));
         let item = Item::new("my_secret_string".to_string(), Some(ttl));
         group.new_item("1234_kid".to_string(), item).unwrap();
-        sleep(Duration::from_secs(5));
+        sleep(Duration::from_secs(4));
         match group.get_object("1234_kid".to_string()){
             Ok(e) => {println!("{:?}", e); panic!("TTl lazy no work")},
             Err(e) => assert_eq!(e, ErrorNM::NoFindObject, "I must not find her"),

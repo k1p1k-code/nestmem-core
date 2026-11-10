@@ -89,13 +89,10 @@ impl Group {
                     }
                 }
             }
-            
-            else if let Object::Group(group) = object{
-                group.cleanup();
-            }
             true
+
         });
-        
+
     }
 
 }
