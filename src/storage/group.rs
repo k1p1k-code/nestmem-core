@@ -1,28 +1,34 @@
 use dashmap::DashMap;
+use dashmap::mapref::one::Ref;
+use crate::error::ErrorNM;
 use crate::storage::object::Object;
 use crate::storage::item::Item;
 use crate::storage::group_ttl::GroupTtlPolicy;
+
+
+pub type ResultObjWork<'a> = Result<Ref<'a, String, Object>, ErrorNM>;
 
 #[derive(Debug)]
 pub struct Group{
     name: String,
     objects: DashMap<String, Object>,
     ttl_policy: GroupTtlPolicy,
-    allowed_groups: bool
+    allowed_groups: bool,
 }
 impl Group {
-    pub fn new_root() -> Self{
+    pub fn new_root(name: String) -> Self{
         Group { 
-            name: "root".to_string(),
+            name: name,
             objects: DashMap::new(),
-            ttl_policy: GroupTtlPolicy::ItemTtl,
-            allowed_groups: true }
+            ttl_policy: GroupTtlPolicy::LazyItemTtl,
+            allowed_groups: true 
+        }
     }
 
     pub fn new(name: String, ttl_policy: Option<GroupTtlPolicy>, allowed_groups: bool) -> Self{
         let ttl_policy = match ttl_policy {
             Some(e) => e,
-            None => GroupTtlPolicy::ItemTtl
+            None => GroupTtlPolicy::LazyItemTtl
         };
         
         Group {
@@ -36,6 +42,12 @@ impl Group {
         self.name.clone()
     }
 
+    pub fn get_object<K: AsRef<str>>(&self, key: K) -> Result<Ref<'_, String, Object>, ErrorNM>{
+        self.objects.get(key.as_ref())
+            .ok_or_else(||{ErrorNM::NoFindObject})
+        
+    }
+
     pub fn withinme_items(&self) -> Vec<Item> {
         self.objects
             .iter()
@@ -47,20 +59,49 @@ impl Group {
 
     }
 
-    pub fn new_object(&mut self, key: String, object: Object){
-        self.objects.insert(key, object);
+    fn new_object(&self, key: String, object: Object) -> ResultObjWork<'_>{
+        self.objects.insert(key.clone(), object);
+        self.get_object(key)
     } 
 
-    pub fn new_item(&mut self, key: String, item: Item){
-        self.new_object(key, Object::Item(item));
+    pub fn new_item(&self, key: String, item: Item) -> ResultObjWork<'_>{
+        self.new_object(key, Object::Item(item))
     }
 
-    pub fn new_group(&mut self, key: String, group: Group) -> Result<(), &'static str>{
+    pub fn new_group(&self, name: String, group: Group) -> ResultObjWork<'_>{
         if !self.allowed_groups{
-            return Err("allowed_groups: false")
+            return Err(ErrorNM::NoPermissionCreateGroup)
         }
-        self.new_object(key, Object::Group(group));
-        Ok(())
+        self.new_object(name, Object::Group(group))
+
+    }
+
+    pub fn cleanup(&self){
+        self.objects.retain(|_key, object|{
+            if let Object::Item(item) = object{
+                match &self.ttl_policy {
+                    GroupTtlPolicy::LazyItemTtl => {
+                        if let Some(ttl) = &item.ttl{
+                            if ttl.is_expire(){
+                                return false
+                            }
+                        }
+                    }
+
+                    GroupTtlPolicy::PeriodicScheduled(period_ttl) => {
+                        if period_ttl.is_expire(){
+                            return false;
+                        }
+                    }
+                }
+            }
+            
+            else if let Object::Group(group) = object{
+                group.cleanup();
+            }
+            true
+        });
+        
     }
 
 }
