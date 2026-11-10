@@ -1,9 +1,9 @@
 [package]
-name = "organmem"
-version = "0.1.0"
+name = "nestmen"
+version = "0.0.1"
 edition = "2024"
 
 [dependencies]
-tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros"] }
+dashmap = { version = "6.2.1" }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = { version = "1.0.154" }
