@@ -10,37 +10,31 @@ pub type ResultObjWork<'a> = Result<Ref<'a, String, Object>, ErrorNM>;
 
 #[derive(Debug)]
 pub struct Group{
-    name: String,
     objects: DashMap<String, Object>,
     ttl_policy: GroupTtlPolicy,
     allowed_groups: bool,
 }
 impl Group {
-    pub fn new_root(name: String) -> Self{
+    pub fn new_root() -> Self{
         Group { 
-            name: name,
             objects: DashMap::new(),
             ttl_policy: GroupTtlPolicy::LazyItemTtl,
             allowed_groups: true 
         }
     }
 
-    pub fn new(name: String, ttl_policy: Option<GroupTtlPolicy>, allowed_groups: bool) -> Self{
+    pub fn new(ttl_policy: Option<GroupTtlPolicy>, allowed_groups: bool) -> Self{
         let ttl_policy = match ttl_policy {
             Some(e) => e,
             None => GroupTtlPolicy::LazyItemTtl
         };
         
         Group {
-            name,
             objects: DashMap::new(),
             ttl_policy,
             allowed_groups: allowed_groups }
     }
 
-    pub fn get_name(&self) -> String{
-        self.name.clone()
-    }
 
     pub fn get_object<K: AsRef<str>>(&self, key: K) -> Result<Ref<'_, String, Object>, ErrorNM>{
         self.objects.get(key.as_ref())

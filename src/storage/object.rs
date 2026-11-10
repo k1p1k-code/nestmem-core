@@ -15,7 +15,6 @@ impl Object {
             Object::Group(g) => {
                 let items = g.withinme_items();
                 let data = SendGroup{
-                    group: g.get_name(),
                     items
                 };
                 serde_json::json!(data).to_string()
@@ -26,6 +25,5 @@ impl Object {
 
 #[derive(Serialize)]
 pub struct SendGroup{
-    pub group: String,
     pub items: Vec<Item> 
 }

@@ -16,7 +16,7 @@ pub struct NestMem {
 impl NestMem {
     pub fn new() -> Arc<Self> {
         let mut mem = Self {
-            root: Group::new_root("root".to_string()),
+            root: Group::new_root(),
             bg_worker_lazy: None,
         };
 
@@ -53,20 +53,20 @@ use super::*;
     #[test]
     fn check_work_ttl_lazy(){
         let nestmem = NestMem::new();
-        let group = Group::new_root("orders".to_string());
+        let group = Group::new_root();
         let dash_object= nestmem.root.new_group("auth".to_string(), group).unwrap();
         let object=dash_object.value();
         let group = match object {
             Object::Group(g) => g,
-            Object::Item(i) => panic!("impossible")
+            Object::Item(_i) => panic!("impossible")
         };
         let ttl = SystemTtl::new(storage::ttl::TimeTtl::Seconds(3));
         let item = Item::new("my_secret_string".to_string(), Some(ttl));
-        
-        sleep(Duration::from_secs(4));
+        group.new_item("1234_kid".to_string(), item).unwrap();
+        sleep(Duration::from_secs(5));
         match group.get_object("1234_kid".to_string()){
-            Ok(e) => panic!("TTl lazy no work"),
-            Err(e) => assert_eq!(e, ErrorNM::NoPermissionCreateGroup, "I must not find her"),
+            Ok(e) => {println!("{:?}", e); panic!("TTl lazy no work")},
+            Err(e) => assert_eq!(e, ErrorNM::NoFindObject, "I must not find her"),
 
 
         }
