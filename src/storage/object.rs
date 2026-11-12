@@ -11,7 +11,7 @@ pub enum Object {
 }
 
 impl Object {
-    fn get_value(&self) -> String {
+    pub fn get_value(&self) -> String {
         match self {
             Object::Item(i) => i.value.clone(),
             Object::Group(g) => {

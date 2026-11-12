@@ -3,6 +3,9 @@ name = "nestmen-core"
 version = "0.0.1"
 edition = "2024"
 
+[lib]
+path = "src/lib.rs"
+
 [dependencies]
 dashmap = { version = "6.2.1" }
 serde = { version = "1.0.229", features = ["derive"] }
