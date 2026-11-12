@@ -1,22 +1,22 @@
-use serde::Serialize;
-use crate::storage::item::Item;
-use crate::storage::group::Group;
+use std::sync::Arc;
 
-#[derive(Debug)]
+use crate::storage::group::Group;
+use crate::storage::item::Item;
+use serde::Serialize;
+
+#[derive(Debug, Clone)]
 pub enum Object {
     Item(Item),
-    Group(Group)
+    Group(Arc<Group>),
 }
 
 impl Object {
-    fn get_value(&self) -> String{
+    fn get_value(&self) -> String {
         match self {
-            Object::Item(i) => {i.value.clone()},
+            Object::Item(i) => i.value.clone(),
             Object::Group(g) => {
                 let items = g.withinme_items();
-                let data = SendGroup{
-                    items
-                };
+                let data = SendGroup { items };
                 serde_json::json!(data).to_string()
             }
         }
@@ -24,6 +24,6 @@ impl Object {
 }
 
 #[derive(Serialize)]
-pub struct SendGroup{
-    pub items: Vec<Item> 
+pub struct SendGroup {
+    pub items: Vec<Item>,
 }

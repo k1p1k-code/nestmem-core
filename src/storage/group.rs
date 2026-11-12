@@ -1,45 +1,48 @@
+use std::sync::Arc;
+
+use crate::error::ErrorNM;
+use crate::storage::group;
+use crate::storage::group_ttl::GroupTtlPolicy;
+use crate::storage::item::Item;
+use crate::storage::object::Object;
 use dashmap::DashMap;
 use dashmap::mapref::one::Ref;
-use crate::error::ErrorNM;
-use crate::storage::object::Object;
-use crate::storage::item::Item;
-use crate::storage::group_ttl::GroupTtlPolicy;
 
+// pub type ResultObjWork<'a> = Result<Ref<'a, String, Object>, ErrorNM>;
 
-pub type ResultObjWork<'a> = Result<Ref<'a, String, Object>, ErrorNM>;
-
-#[derive(Debug)]
-pub struct Group{
+#[derive(Debug, Clone)]
+pub struct Group {
     objects: DashMap<String, Object>,
     ttl_policy: GroupTtlPolicy,
     allowed_groups: bool,
 }
 impl Group {
-    pub fn new_root() -> Self{
-        Group { 
+    pub fn new_root() -> Self {
+        Group {
             objects: DashMap::new(),
             ttl_policy: GroupTtlPolicy::LazyItemTtl,
-            allowed_groups: true 
+            allowed_groups: true,
         }
     }
 
-    pub fn new(ttl_policy: Option<GroupTtlPolicy>, allowed_groups: bool) -> Self{
+    pub fn new(ttl_policy: Option<GroupTtlPolicy>, allowed_groups: bool) -> Self {
         let ttl_policy = match ttl_policy {
             Some(e) => e,
-            None => GroupTtlPolicy::LazyItemTtl
+            None => GroupTtlPolicy::LazyItemTtl,
         };
-        
+
         Group {
             objects: DashMap::new(),
             ttl_policy,
-            allowed_groups: allowed_groups }
+            allowed_groups: allowed_groups,
+        }
     }
 
-
-    pub fn get_object<K: AsRef<str>>(&self, key: K) -> Result<Ref<'_, String, Object>, ErrorNM>{
-        self.objects.get(key.as_ref())
-            .ok_or_else(||{ErrorNM::NoFindObject})
-        
+    pub fn get_clone_object<K: AsRef<str>>(&self, key: K) -> Result<Object, ErrorNM> {
+        self.objects
+            .get(key.as_ref())
+            .map(|r| r.value().clone())
+            .ok_or(ErrorNM::NoFindObject)
     }
 
     pub fn withinme_items(&self) -> Vec<Item> {
@@ -50,49 +53,49 @@ impl Group {
                 Object::Group(_) => None,
             })
             .collect()
-
     }
 
-    fn new_object(&self, key: String, object: Object) -> ResultObjWork<'_>{
+    fn new_object(&self, key: String, object: Object) {
         self.objects.insert(key.clone(), object);
-        self.get_object(key)
-    } 
+    }
 
-    pub fn new_item(&self, key: String, item: Item) -> ResultObjWork<'_>{
+    pub fn new_item(&self, key: String, item: Item) {
         self.new_object(key, Object::Item(item))
     }
 
-    pub fn new_group(&self, name: String, group: Group) -> ResultObjWork<'_>{
-        if !self.allowed_groups{
-            return Err(ErrorNM::NoPermissionCreateGroup)
+    pub fn new_group(&self, name: String, group: Group) -> Result<Arc<Group>, ErrorNM>{
+        if !self.allowed_groups {
+            return Err(ErrorNM::NoPermissionCreateGroup);
         }
-        self.new_object(name, Object::Group(group))
-
+        let arc_group = Arc::new(group);
+        self.new_object(name, Object::Group(arc_group.clone()));
+        Ok(arc_group)
     }
 
-    pub fn cleanup(&self){
-        self.objects.retain(|_key, object|{
-            if let Object::Item(item) = object{
+    pub fn cleanup(&self) {
+        let mut group_store= vec![];
+        self.objects.retain(|_key, object| {
+            if let Object::Item(item) = object {
                 match &self.ttl_policy {
                     GroupTtlPolicy::LazyItemTtl => {
-                        if let Some(ttl) = &item.ttl{
-                            if ttl.is_expire(){
-                                return false
-                            }
-                        }
+                        return item.ttl
+                            .as_ref()
+                            .is_some_and(|ttl| !ttl.is_expire())
                     }
 
                     GroupTtlPolicy::PeriodicScheduled(period_ttl) => {
-                        if period_ttl.is_expire(){
-                            return false;
-                        }
+                        return !period_ttl.is_expire()
                     }
                 }
             }
+            if let Object::Group(group) = object{
+                group_store.push(Arc::clone(group));
+                return true
+            }
             true
-
         });
-
+        for i in group_store{
+            i.cleanup();
+        }
     }
-
 }

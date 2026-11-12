@@ -1,7 +1,7 @@
 use crate::storage::ttl::SystemTtl;
 
-#[derive(Debug)]
-pub enum GroupTtlPolicy{
+#[derive(Debug, Clone)]
+pub enum GroupTtlPolicy {
     PeriodicScheduled(SystemTtl),
-    LazyItemTtl
+    LazyItemTtl,
 }

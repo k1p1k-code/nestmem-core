@@ -1,19 +1,22 @@
-use std::time::{self, Duration, Instant};
 use serde::Serialize;
+use std::time::{self, Duration, Instant};
 
 #[derive(Debug, Serialize, Clone)]
-pub struct SystemTtl{
+pub struct SystemTtl {
     #[serde(skip)]
     pub create_at: Instant,
-    pub time: TimeTtl 
+    pub time: TimeTtl,
 }
 
 impl SystemTtl {
-    pub fn new(time: TimeTtl) -> Self{
-        Self { create_at: Instant::now(), time }
+    pub fn new(time: TimeTtl) -> Self {
+        Self {
+            create_at: Instant::now(),
+            time,
+        }
     }
 
-    pub fn is_expire(&self) -> bool{
+    pub fn is_expire(&self) -> bool {
         self.create_at.elapsed() >= self.time.to_duration()
     }
 }
@@ -21,14 +24,14 @@ impl SystemTtl {
 #[derive(Debug, Serialize, Clone)]
 pub enum TimeTtl {
     Minutes(u64),
-    Seconds(u64)
-}  
+    Seconds(u64),
+}
 
 impl TimeTtl {
     fn to_duration(&self) -> Duration {
         match self {
             TimeTtl::Minutes(t) => Duration::from_mins(*t),
-            TimeTtl::Seconds(t) => Duration::from_secs(*t)
+            TimeTtl::Seconds(t) => Duration::from_secs(*t),
         }
     }
 }
