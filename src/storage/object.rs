@@ -30,7 +30,7 @@ impl Object {
     }
 
     pub fn delete(&self) -> Result<(), ErrorNM> {
-        let parent = self.parent.upgrade().ok_or(ErrorNM::ParentNotExist)?;
+        let parent = self.parent.upgrade().ok_or(ErrorNM::NoFindObject)?;
         parent
             .objects
             .retain(|_key, obj| match (&self.typ, &obj.typ) {
