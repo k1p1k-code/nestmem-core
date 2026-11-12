@@ -14,9 +14,11 @@ pub struct Group {
     allowed_groups: bool,
 }
 impl Group {
-
-    fn create_obj(&self, obj: TypeObject) -> Object{
-        Object { parent: self.self_weak.clone(), typ: obj }
+    fn create_obj(&self, obj: TypeObject) -> Object {
+        Object {
+            parent: self.self_weak.clone(),
+            typ: obj,
+        }
     }
 
     pub fn new_root() -> Arc<Self> {
@@ -24,7 +26,7 @@ impl Group {
             self_weak: weak_self.clone(),
             objects: DashMap::new(),
             ttl_policy: GroupTtlPolicy::LazyItemTtl,
-            allowed_groups: true
+            allowed_groups: true,
         })
     }
 
@@ -33,7 +35,7 @@ impl Group {
             self_weak: weak_self.clone(),
             objects: DashMap::new(),
             ttl_policy,
-            allowed_groups
+            allowed_groups,
         })
     }
 
@@ -66,17 +68,17 @@ impl Group {
         if !self.allowed_groups {
             return Err(ErrorNM::NoPermissionCreateGroup);
         }
-        let obj = Object{
+        let obj = Object {
             parent: Arc::downgrade(&group),
-            typ: TypeObject::Group(group.clone())
+            typ: TypeObject::Group(group.clone()),
         };
         self.new_object(name, obj);
         Ok(group)
     }
 
-    pub fn delete_obj(&self, key: String) -> Result<(), ErrorNM>{
-        if !self.objects.remove(&key).is_some(){
-            return Err(ErrorNM::NoFindObject)
+    pub fn delete_obj(&self, key: String) -> Result<(), ErrorNM> {
+        if !self.objects.remove(&key).is_some() {
+            return Err(ErrorNM::NoFindObject);
         }
         Ok(())
     }

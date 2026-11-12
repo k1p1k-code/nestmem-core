@@ -6,9 +6,9 @@ use crate::storage::item::Item;
 use serde::Serialize;
 
 #[derive(Debug, Clone)]
-pub struct Object{
+pub struct Object {
     pub parent: Weak<Group>,
-    pub typ: TypeObject
+    pub typ: TypeObject,
 }
 
 #[derive(Debug, Clone)]
@@ -29,13 +29,15 @@ impl Object {
         }
     }
 
-    pub fn delete(&self) -> Result<(), ErrorNM>{
+    pub fn delete(&self) -> Result<(), ErrorNM> {
         let parent = self.parent.upgrade().ok_or(ErrorNM::ParentNotExist)?;
-        parent.objects.retain(|_key, obj| match (&self.typ, &obj.typ) {
-            (TypeObject::Group(g1), TypeObject::Group(g2)) => !Arc::ptr_eq(g1, g2),
-            (TypeObject::Item(i1), TypeObject::Item(i2)) => !Arc::ptr_eq(i1, i2),
-            _ => true,
-        });
+        parent
+            .objects
+            .retain(|_key, obj| match (&self.typ, &obj.typ) {
+                (TypeObject::Group(g1), TypeObject::Group(g2)) => !Arc::ptr_eq(g1, g2),
+                (TypeObject::Item(i1), TypeObject::Item(i2)) => !Arc::ptr_eq(i1, i2),
+                _ => true,
+            });
         Ok(())
     }
 }
