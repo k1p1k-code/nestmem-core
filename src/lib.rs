@@ -51,6 +51,16 @@ mod tests {
 
     use super::*;
     #[test]
+    fn check_defualt(){
+        let nestmem = NestMem::new();
+        let group = Group::new_root();
+        let group = nestmem.root.new_group("auth".to_string(), group).unwrap();
+        let ttl = SystemTtl::new(storage::ttl::TimeTtl::Seconds(3));
+        let item = Item::new("my_secret_string".to_string(), Some(ttl));
+        group.new_item("1234_kid".to_string(), item);
+        let obj = group.get_clone_object("1234_kid".to_string()).unwrap();
+        println!("{:?}", obj);
+    }
     fn check_work_ttl_lazy() {
         let nestmem = NestMem::new();
         let group = Group::new_root();
