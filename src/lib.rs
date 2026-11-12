@@ -51,7 +51,7 @@ mod tests {
 
     use super::*;
     #[test]
-    fn check_defualt(){
+    fn check_defualt() {
         let nestmem = NestMem::new();
         let group = Group::new_root();
         let group = nestmem.root.new_group("auth".to_string(), group).unwrap();
