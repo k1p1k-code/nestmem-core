@@ -76,7 +76,7 @@ impl Group {
             if let Object::Item(item) = object {
                 match &self.ttl_policy {
                     GroupTtlPolicy::LazyItemTtl => {
-                        return item.ttl.as_ref().is_some_and(|ttl| !ttl.is_expire());
+                        return item.ttl.as_ref().is_none_or(|ttl| !ttl.is_expire());
                     }
 
                     GroupTtlPolicy::PeriodicScheduled(period_ttl) => {
