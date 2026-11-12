@@ -6,7 +6,7 @@ use crate::storage::item::Item;
 use crate::storage::object::{Object, TypeObject};
 use dashmap::DashMap;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Group {
     self_weak: Weak<Group>,
     pub objects: DashMap<String, Object>,
@@ -68,10 +68,7 @@ impl Group {
         if !self.allowed_groups {
             return Err(ErrorNM::NoPermissionCreateGroup);
         }
-        let obj = Object {
-            parent: Arc::downgrade(&group),
-            typ: TypeObject::Group(group.clone()),
-        };
+        let obj = self.create_obj(TypeObject::Group(group.clone()));
         self.new_object(name, obj);
         Ok(group)
     }
