@@ -19,7 +19,7 @@ pub struct NestMem {
 
 impl NestMem {
     pub fn new() -> Self {
-        let root = Arc::new(Group::new_root());
+        let root = Group::new_root();
         let weak_root = Arc::downgrade(&root);
 
         let bg_worker_lazy = thread::spawn(move || {

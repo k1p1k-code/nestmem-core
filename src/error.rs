@@ -4,4 +4,5 @@ pub enum ErrorNM {
     NoPermissionCreateGroup,
     NoFindObject,
     UnhandledError,
+    ParentNotExist
 }

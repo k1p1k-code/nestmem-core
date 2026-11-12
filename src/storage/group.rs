@@ -1,39 +1,40 @@
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 
 use crate::error::ErrorNM;
 use crate::storage::group_ttl::GroupTtlPolicy;
 use crate::storage::item::Item;
-use crate::storage::object::Object;
+use crate::storage::object::{Object, TypeObject};
 use dashmap::DashMap;
-
-// pub type ResultObjWork<'a> = Result<Ref<'a, String, Object>, ErrorNM>;
 
 #[derive(Debug, Clone)]
 pub struct Group {
-    objects: DashMap<String, Object>,
+    self_weak: Weak<Group>,
+    pub objects: DashMap<String, Object>,
     ttl_policy: GroupTtlPolicy,
     allowed_groups: bool,
 }
 impl Group {
-    pub fn new_root() -> Self {
-        Group {
-            objects: DashMap::new(),
-            ttl_policy: GroupTtlPolicy::LazyItemTtl,
-            allowed_groups: true,
-        }
+
+    fn create_obj(&self, obj: TypeObject) -> Object{
+        Object { parent: self.self_weak.clone(), typ: obj }
     }
 
-    pub fn new(ttl_policy: Option<GroupTtlPolicy>, allowed_groups: bool) -> Self {
-        let ttl_policy = match ttl_policy {
-            Some(e) => e,
-            None => GroupTtlPolicy::LazyItemTtl,
-        };
+    pub fn new_root() -> Arc<Self> {
+        Arc::new_cyclic(|weak_self| Group {
+            self_weak: weak_self.clone(),
+            objects: DashMap::new(),
+            ttl_policy: GroupTtlPolicy::LazyItemTtl,
+            allowed_groups: true
+        })
+    }
 
-        Group {
+    pub fn new(ttl_policy: GroupTtlPolicy, allowed_groups: bool) -> Arc<Self> {
+        Arc::new_cyclic(|weak_self| Group {
+            self_weak: weak_self.clone(),
             objects: DashMap::new(),
             ttl_policy,
-            allowed_groups,
-        }
+            allowed_groups
+        })
     }
 
     pub fn get_clone_object<K: AsRef<str>>(&self, key: K) -> Result<Object, ErrorNM> {
@@ -43,12 +44,12 @@ impl Group {
             .ok_or(ErrorNM::NoFindObject)
     }
 
-    pub fn withinme_items(&self) -> Vec<Item> {
+    pub fn withinme_items(&self) -> Vec<Arc<Item>> {
         self.objects
             .iter()
-            .filter_map(|r| match r.value() {
-                Object::Item(e) => Some(e.clone()),
-                Object::Group(_) => None,
+            .filter_map(|r| match &r.value().typ {
+                TypeObject::Item(e) => Some(e.clone()),
+                TypeObject::Group(_) => None,
             })
             .collect()
     }
@@ -58,22 +59,32 @@ impl Group {
     }
 
     pub fn new_item(&self, key: String, item: Item) {
-        self.new_object(key, Object::Item(item))
+        self.new_object(key, self.create_obj(TypeObject::Item(Arc::new(item))))
     }
 
-    pub fn new_group(&self, name: String, group: Group) -> Result<Arc<Group>, ErrorNM> {
+    pub fn new_group(&self, name: String, group: Arc<Group>) -> Result<Arc<Group>, ErrorNM> {
         if !self.allowed_groups {
             return Err(ErrorNM::NoPermissionCreateGroup);
         }
-        let arc_group = Arc::new(group);
-        self.new_object(name, Object::Group(arc_group.clone()));
-        Ok(arc_group)
+        let obj = Object{
+            parent: Arc::downgrade(&group),
+            typ: TypeObject::Group(group.clone())
+        };
+        self.new_object(name, obj);
+        Ok(group)
+    }
+
+    pub fn delete_obj(&self, key: String) -> Result<(), ErrorNM>{
+        if !self.objects.remove(&key).is_some(){
+            return Err(ErrorNM::NoFindObject)
+        }
+        Ok(())
     }
 
     pub fn cleanup(&self) {
         let mut group_store = vec![];
         self.objects.retain(|_key, object| {
-            if let Object::Item(item) = object {
+            if let TypeObject::Item(item) = &object.typ {
                 match &self.ttl_policy {
                     GroupTtlPolicy::LazyItemTtl => {
                         return item.ttl.as_ref().is_none_or(|ttl| !ttl.is_expire());
@@ -84,7 +95,7 @@ impl Group {
                     }
                 }
             }
-            if let Object::Group(group) = object {
+            if let TypeObject::Group(group) = &object.typ {
                 group_store.push(Arc::clone(group));
                 return true;
             }
