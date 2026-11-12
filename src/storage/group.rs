@@ -12,7 +12,7 @@ use dashmap::{DashMap, Entry};
 #[derive(Debug)]
 pub struct Group {
     self_weak: Weak<Group>,
-    is_attached: AtomicBool,
+    pub(crate) is_attached: AtomicBool,
     pub(crate) objects: DashMap<String, Object>,
     ttl_policy: GroupTtlPolicy,
     allowed_groups: bool,
