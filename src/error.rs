@@ -5,7 +5,5 @@ pub enum ErrorNM {
     NoFindObject,
     UnhandledError,
     ParentNotExist,
-    GroupExists
-
-
+    GroupExists,
 }

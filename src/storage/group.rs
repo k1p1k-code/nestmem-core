@@ -1,5 +1,6 @@
-use std::{
-    sync::{Arc, Weak, atomic::{AtomicBool, Ordering}},
+use std::sync::{
+    Arc, Weak,
+    atomic::{AtomicBool, Ordering},
 };
 
 use crate::error::ErrorNM;
@@ -24,7 +25,7 @@ impl Group {
         }
     }
 
-    pub fn contains_group(&self, group: Arc<Group>) -> bool{
+    pub fn contains_group(&self, group: Arc<Group>) -> bool {
         if std::ptr::eq(self.self_weak.as_ptr(), Arc::as_ptr(&group)) {
             return true;
         }
@@ -75,9 +76,10 @@ impl Group {
     }
 
     fn new_object(&self, key: String, object: Object) {
-        if let Some(old_obj) = self.objects.insert(key, object) 
-            && let TypeObject::Group(old_group) = old_obj.typ{
-                old_group.is_attached.store(false, Ordering::Release);
+        if let Some(old_obj) = self.objects.insert(key, object)
+            && let TypeObject::Group(old_group) = old_obj.typ
+        {
+            old_group.is_attached.store(false, Ordering::Release);
         }
     }
 
