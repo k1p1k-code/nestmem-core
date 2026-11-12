@@ -1,5 +1,5 @@
 use serde::Serialize;
-use std::time::{self, Duration, Instant};
+use std::time::{Duration, Instant};
 
 #[derive(Debug, Serialize, Clone)]
 pub struct SystemTtl {

@@ -1,12 +1,10 @@
 use std::sync::Arc;
 
 use crate::error::ErrorNM;
-use crate::storage::group;
 use crate::storage::group_ttl::GroupTtlPolicy;
 use crate::storage::item::Item;
 use crate::storage::object::Object;
 use dashmap::DashMap;
-use dashmap::mapref::one::Ref;
 
 // pub type ResultObjWork<'a> = Result<Ref<'a, String, Object>, ErrorNM>;
 
@@ -34,7 +32,7 @@ impl Group {
         Group {
             objects: DashMap::new(),
             ttl_policy,
-            allowed_groups: allowed_groups,
+            allowed_groups,
         }
     }
 
@@ -63,7 +61,7 @@ impl Group {
         self.new_object(key, Object::Item(item))
     }
 
-    pub fn new_group(&self, name: String, group: Group) -> Result<Arc<Group>, ErrorNM>{
+    pub fn new_group(&self, name: String, group: Group) -> Result<Arc<Group>, ErrorNM> {
         if !self.allowed_groups {
             return Err(ErrorNM::NoPermissionCreateGroup);
         }
@@ -73,28 +71,26 @@ impl Group {
     }
 
     pub fn cleanup(&self) {
-        let mut group_store= vec![];
+        let mut group_store = vec![];
         self.objects.retain(|_key, object| {
             if let Object::Item(item) = object {
                 match &self.ttl_policy {
                     GroupTtlPolicy::LazyItemTtl => {
-                        return item.ttl
-                            .as_ref()
-                            .is_some_and(|ttl| !ttl.is_expire())
+                        return item.ttl.as_ref().is_some_and(|ttl| !ttl.is_expire());
                     }
 
                     GroupTtlPolicy::PeriodicScheduled(period_ttl) => {
-                        return !period_ttl.is_expire()
+                        return !period_ttl.is_expire();
                     }
                 }
             }
-            if let Object::Group(group) = object{
+            if let Object::Group(group) = object {
                 group_store.push(Arc::clone(group));
-                return true
+                return true;
             }
             true
         });
-        for i in group_store{
+        for i in group_store {
             i.cleanup();
         }
     }

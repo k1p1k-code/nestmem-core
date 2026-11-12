@@ -1,28 +1,24 @@
 pub mod error;
 pub mod storage;
 
-
 use std::{
-    sync::Arc, thread::{self, JoinHandle}, time::Duration,
+    sync::Arc,
+    thread::{self, JoinHandle},
+    time::Duration,
 };
 
 pub use error::ErrorNM;
 pub use storage::{
-    group::Group,
-    item::Item,
-    object::Object,
-    ttl::SystemTtl,
-    group_ttl::GroupTtlPolicy
+    group::Group, group_ttl::GroupTtlPolicy, item::Item, object::Object, ttl::SystemTtl,
 };
-
 
 pub struct NestMem {
     pub root: Arc<Group>,
-    bg_worker_lazy: JoinHandle<()>, 
+    _bg_worker_lazy: JoinHandle<()>,
 }
 
 impl NestMem {
-    pub fn new() -> Self { // Больше не Arc<Self>!
+    pub fn new() -> Self {
         let root = Arc::new(Group::new_root());
         let weak_root = Arc::downgrade(&root);
 
@@ -38,16 +34,22 @@ impl NestMem {
 
         Self {
             root,
-            bg_worker_lazy,
+            _bg_worker_lazy: bg_worker_lazy,
         }
     }
 }
 
+impl Default for NestMem {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    #![allow(clippy::unnecessary_to_owned)]
 
+    use super::*;
     #[test]
     fn check_work_ttl_lazy() {
         let nestmem = NestMem::new();
@@ -55,6 +57,7 @@ mod tests {
         let group = nestmem.root.new_group("auth".to_string(), group).unwrap();
         let ttl = SystemTtl::new(storage::ttl::TimeTtl::Seconds(3));
         let item = Item::new("my_secret_string".to_string(), Some(ttl));
+        #[allow(clippy::unnecessary_to_owned)]
         group.new_item("1234_kid".to_string(), item);
         thread::sleep(Duration::from_secs(5));
         match group.get_clone_object("1234_kid".to_string()) {
