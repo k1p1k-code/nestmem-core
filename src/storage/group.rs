@@ -1,29 +1,46 @@
-use std::sync::{Arc, Weak};
+use std::{
+    sync::{Arc, Weak, atomic::{AtomicBool, Ordering}},
+};
 
 use crate::error::ErrorNM;
 use crate::storage::group_ttl::GroupTtlPolicy;
 use crate::storage::item::Item;
 use crate::storage::object::{Object, TypeObject};
-use dashmap::DashMap;
+use dashmap::{DashMap, Entry};
 
 #[derive(Debug)]
 pub struct Group {
     self_weak: Weak<Group>,
-    pub objects: DashMap<String, Object>,
+    is_attached: AtomicBool,
+    pub(crate) objects: DashMap<String, Object>,
     ttl_policy: GroupTtlPolicy,
     allowed_groups: bool,
 }
 impl Group {
-    fn create_obj(&self, obj: TypeObject) -> Object {
+    pub(crate) fn create_obj(&self, obj: TypeObject) -> Object {
         Object {
             parent: self.self_weak.clone(),
             typ: obj,
         }
     }
 
+    pub fn contains_group(&self, group: Arc<Group>) -> bool{
+        if std::ptr::eq(self.self_weak.as_ptr(), Arc::as_ptr(&group)) {
+            return true;
+        }
+        self.objects.iter().any(|entry| {
+            if let TypeObject::Group(child_group) = &entry.value().typ {
+                Arc::ptr_eq(child_group, &group) || child_group.contains_group(group.clone())
+            } else {
+                false
+            }
+        })
+    }
+
     pub fn new_root() -> Arc<Self> {
         Arc::new_cyclic(|weak_self| Group {
             self_weak: weak_self.clone(),
+            is_attached: AtomicBool::new(true),
             objects: DashMap::new(),
             ttl_policy: GroupTtlPolicy::LazyItemTtl,
             allowed_groups: true,
@@ -33,6 +50,7 @@ impl Group {
     pub fn new(ttl_policy: GroupTtlPolicy, allowed_groups: bool) -> Arc<Self> {
         Arc::new_cyclic(|weak_self| Group {
             self_weak: weak_self.clone(),
+            is_attached: AtomicBool::new(false),
             objects: DashMap::new(),
             ttl_policy,
             allowed_groups,
@@ -57,7 +75,10 @@ impl Group {
     }
 
     fn new_object(&self, key: String, object: Object) {
-        self.objects.insert(key.clone(), object);
+        if let Some(old_obj) = self.objects.insert(key, object) 
+            && let TypeObject::Group(old_group) = old_obj.typ{
+                old_group.is_attached.store(false, Ordering::Release);
+        }
     }
 
     pub fn new_item(&self, key: String, item: Item) {
@@ -68,15 +89,35 @@ impl Group {
         if !self.allowed_groups {
             return Err(ErrorNM::NoPermissionCreateGroup);
         }
-        let obj = self.create_obj(TypeObject::Group(group.clone()));
-        self.new_object(name, obj);
-        Ok(group)
+
+        match self.objects.entry(name) {
+            Entry::Occupied(_) => Err(ErrorNM::GroupExists),
+            Entry::Vacant(vacant) => {
+                if group
+                    .is_attached
+                    .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+                    .is_err()
+                {
+                    return Err(ErrorNM::GroupExists);
+                }
+
+                let obj = self.create_obj(TypeObject::Group(group.clone()));
+                vacant.insert(obj);
+                Ok(group)
+            }
+        }
     }
 
-    pub fn delete_obj(&self, key: String) -> Result<(), ErrorNM> {
-        if !self.objects.remove(&key).is_some() {
-            return Err(ErrorNM::NoFindObject);
+    pub fn delete_obj(&self, key: impl AsRef<str>) -> Result<(), ErrorNM> {
+        let (_key, object) = self
+            .objects
+            .remove(key.as_ref())
+            .ok_or(ErrorNM::NoFindObject)?;
+
+        if let TypeObject::Group(group) = object.typ {
+            group.is_attached.store(false, Ordering::Release);
         }
+
         Ok(())
     }
 

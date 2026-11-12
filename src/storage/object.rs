@@ -7,7 +7,7 @@ use serde::Serialize;
 
 #[derive(Debug, Clone)]
 pub struct Object {
-    pub parent: Weak<Group>,
+    pub(crate) parent: Weak<Group>,
     pub typ: TypeObject,
 }
 
