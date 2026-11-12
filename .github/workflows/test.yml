@@ -6,18 +6,32 @@ env:
   CARGO_TERM_COLOR: always
     
 jobs:
-  lint-and-test:
+  format:
+    name: Check format
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code 
-        uses: actions/checkout@v4
-      - name: Install toolchain
-        uses: dtolnay/rust-toolchain@stable
-      - name: Cargo cache
-        uses: Swatinem/rust-cache@v2
-      - name: Check format
-        run: cargo fmt --all -- --check
-      - name: Linter
-        run: cargo clippy --all-targets --all-features -- -D warnings
-      - name: Tests
-        run: cargo test --all-features --verbose
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - run: cargo fmt --all -- --check
+      
+  lint:
+    name: Linter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo clippy --all-targets --all-features -- -D warnings
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --all-features --verbose
