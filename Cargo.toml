@@ -2,6 +2,11 @@
 name = "nestmen-core"
 version = "0.0.1"
 edition = "2024"
+description = "A library that enables structured cache storage in RAM with TTL support"
+license = "Apache-2.0"
+repository = "https://github.com/k1p1k-code/nestmem-core"
+readme = "README.md"
+keywords = ["cache", "ttl", "memory", "storage", "in-memory"]
 
 [lib]
 path = "src/lib.rs"
