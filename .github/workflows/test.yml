@@ -1,0 +1,23 @@
+name: TestRust
+on: 
+  push:
+    branches: [ "main" ]
+env:
+  CARGO_TERM_COLOR: always
+    
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code 
+        run: actions/checkout@v4
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cargo cache
+        uses: Swatinem/rust-cache@v2
+      - name: Check format
+        run: cargo fmt --all -- --check
+      - name: Linter
+        run: cargo clippy --all-targets --all-features -- -D warnings
+      - name: Tests
+        run: cargo test --all-features --verbose
