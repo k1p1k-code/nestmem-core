@@ -43,7 +43,7 @@ fn check_work_ttl_lazy() {
             println!("{:?}", e);
             panic!("TTL lazy no work");
         }
-        Err(e) => assert_eq!(e, ErrorNM::NoFindObject, "I must not find her"),
+        Err(e) => assert_eq!(e, ErrorNM::ObjectNotFound, "I must not find her"),
     }
 }
 
@@ -91,7 +91,7 @@ async fn check_work_ttl_async() {
 
     match group.get_clone_object("1234_kid") {
         Ok(e) => panic!("Async TTL did not clean up object: {:?}", e),
-        Err(e) => assert_eq!(e, ErrorNM::NoFindObject, "Object must be expired"),
+        Err(e) => assert_eq!(e, ErrorNM::ObjectNotFound, "Object must be expired"),
     }
 }
 

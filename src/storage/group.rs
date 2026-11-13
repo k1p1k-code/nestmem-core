@@ -63,7 +63,7 @@ impl Group {
         self.objects
             .get(key.as_ref())
             .map(|r| r.value().clone())
-            .ok_or(ErrorNM::NoFindObject)
+            .ok_or(ErrorNM::ObjectNotFound)
     }
 
     pub fn ls(&self) -> Vec<Arc<Object>> {
@@ -136,7 +136,7 @@ impl Group {
         let (_key, object) = self
             .objects
             .remove(key.as_ref())
-            .ok_or(ErrorNM::NoFindObject)?;
+            .ok_or(ErrorNM::ObjectNotFound)?;
 
         if let TypeObject::Group(group) = &object.typ {
             group.is_attached.store(false, Ordering::Release);
@@ -173,8 +173,8 @@ impl Group {
     pub fn find_obj_for_key(&self, key: impl AsRef<str>) -> Result<Arc<Object>, ErrorNM> {
         self.objects
             .get(key.as_ref())
-            .map(|guard| Arc::clone(guard.value())) // или guard.value().clone()
-            .ok_or(ErrorNM::NoFindObject)
+            .map(|guard: dashmap::mapref::one::Ref<'_, String, Arc<Object>>| Arc::clone(guard.value())) // или guard.value().clone()
+            .ok_or(ErrorNM::ObjectNotFound)
     }
 }
 
@@ -182,8 +182,8 @@ impl ToObject for Arc<Group> {
     fn to_object(&self) -> Result<Arc<Object>, ErrorNM> {
         self.object
             .as_ref()
-            .ok_or(ErrorNM::NoFindObject)?
+            .ok_or(ErrorNM::ObjectNotFound)?
             .upgrade()
-            .ok_or(ErrorNM::NoFindObject)
+            .ok_or(ErrorNM::ObjectNotFound)
     }
 }

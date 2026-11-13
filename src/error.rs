@@ -1,8 +1,7 @@
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq, Eq))]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ErrorNM {
     NoPermissionCreateGroup,
-    NoFindObject,
+    ObjectNotFound,
     UnhandledError,
     ParentNotExist,
     GroupExists,

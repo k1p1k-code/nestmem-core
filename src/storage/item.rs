@@ -18,12 +18,12 @@ impl Item {
         Arc::new(Self { object, value, ttl })
     }
     pub fn to_object(&self) -> Result<Arc<Object>, ErrorNM> {
-        self.object.upgrade().ok_or(ErrorNM::NoFindObject)
+        self.object.upgrade().ok_or(ErrorNM::ObjectNotFound)
     }
 }
 
 impl ToObject for Arc<Item> {
     fn to_object(&self) -> Result<Arc<Object>, ErrorNM> {
-        self.object.upgrade().ok_or(ErrorNM::NoFindObject)
+        self.object.upgrade().ok_or(ErrorNM::ObjectNotFound)
     }
 }

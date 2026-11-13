@@ -9,7 +9,7 @@ use crate::*;
 #[test]
 fn test_group_creation_and_permissions() {
     let nestmem = NestMem::new();
-    assert_eq!(nestmem.root.to_object().unwrap_err(), ErrorNM::NoFindObject);
+    assert_eq!(nestmem.root.to_object().unwrap_err(), ErrorNM::ObjectNotFound);
     assert!(nestmem.root.is_attached.load(Ordering::Acquire));
 
     let leaf_group = Object::group(
@@ -99,7 +99,7 @@ fn test_items_lookup_and_filtering() {
     assert!(group.get_clone_object("i1").is_ok());
     assert_eq!(
         group.get_clone_object("missing").unwrap_err(),
-        ErrorNM::NoFindObject
+        ErrorNM::ObjectNotFound
     );
 }
 
@@ -174,16 +174,16 @@ fn test_delete_obj_and_to_object_lifecycle() {
     group.delete_obj("admin").unwrap();
     assert_eq!(
         group.delete_obj("admin").unwrap_err(),
-        ErrorNM::NoFindObject
+        ErrorNM::ObjectNotFound
     );
-    assert_eq!(item.to_object().unwrap_err(), ErrorNM::NoFindObject);
+    assert_eq!(item.to_object().unwrap_err(), ErrorNM::ObjectNotFound);
 
     nestmem.root.delete_obj("users").unwrap();
     assert!(!group.is_attached.load(Ordering::Acquire));
 
     drop(group_obj);
     drop(stored_obj);
-    assert_eq!(group.to_object().unwrap_err(), ErrorNM::NoFindObject);
+    assert_eq!(group.to_object().unwrap_err(), ErrorNM::ObjectNotFound);
 }
 
 #[test]
@@ -225,10 +225,10 @@ fn test_cleanup_ttl() {
     assert!(group.get_clone_object("persist").is_ok());
     assert_eq!(
         group.get_clone_object("temp").unwrap_err(),
-        ErrorNM::NoFindObject
+        ErrorNM::ObjectNotFound
     );
 
-    assert_eq!(expired_item.to_object().unwrap_err(), ErrorNM::NoFindObject);
+    assert_eq!(expired_item.to_object().unwrap_err(), ErrorNM::ObjectNotFound);
     assert!(alive_item.to_object().is_ok());
 }
 

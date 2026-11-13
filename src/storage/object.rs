@@ -80,7 +80,7 @@ impl Object {
     }
 
     pub fn delete(&self) -> Result<(), ErrorNM> {
-        let parent = self.parent.upgrade().ok_or(ErrorNM::NoFindObject)?;
+        let parent = self.parent.upgrade().ok_or(ErrorNM::ObjectNotFound)?;
         let mut deleted = false;
         parent
             .objects
@@ -105,7 +105,7 @@ impl Object {
                 _ => true,
             });
         if !deleted {
-            return Err(ErrorNM::NoFindObject);
+            return Err(ErrorNM::ObjectNotFound);
         }
         Ok(())
     }
@@ -130,7 +130,7 @@ mod tests {
     #[test]
     fn test_to_object_lifecycle() {
         let nestmem = NestMem::new();
-        assert_eq!(nestmem.root.to_object().unwrap_err(), ErrorNM::NoFindObject);
+        assert_eq!(nestmem.root.to_object().unwrap_err(), ErrorNM::ObjectNotFound);
         let group = Object::group(
             "users".to_string(),
             true,
@@ -154,11 +154,11 @@ mod tests {
         drop(item_obj);
         group.delete_obj("admin").unwrap();
 
-        assert_eq!(item.to_object().unwrap_err(), ErrorNM::NoFindObject);
+        assert_eq!(item.to_object().unwrap_err(), ErrorNM::ObjectNotFound);
 
         group_obj.delete().unwrap();
         drop(group_obj);
         drop(stored_group_obj);
-        assert_eq!(group.to_object().unwrap_err(), ErrorNM::NoFindObject);
+        assert_eq!(group.to_object().unwrap_err(), ErrorNM::ObjectNotFound);
     }
 }
