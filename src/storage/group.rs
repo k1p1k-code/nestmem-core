@@ -18,14 +18,15 @@ pub struct Group {
     ttl_policy: GroupTtlPolicy,
     allowed_groups: bool,
 }
+
 impl Group {
-    pub fn contains_group(&self, group: Arc<Group>) -> bool {
-        if std::ptr::eq(self.self_weak.as_ptr(), Arc::as_ptr(&group)) {
+    pub fn contains_group(&self, group: &Arc<Group>) -> bool {
+        if std::ptr::eq(self.self_weak.as_ptr(), Arc::as_ptr(group)) {
             return true;
         }
         self.objects.iter().any(|entry| {
             if let TypeObject::Group(child_group) = &entry.value().typ {
-                Arc::ptr_eq(child_group, &group) || child_group.contains_group(group.clone())
+                Arc::ptr_eq(child_group, group) || child_group.contains_group(group)
             } else {
                 false
             }
@@ -167,6 +168,14 @@ impl Group {
         for i in group_store {
             i.cleanup();
         }
+    }
+
+    pub fn find_obj_for_key(&self, key: impl AsRef<str>) -> Result<Arc<Object>, ErrorNM>{
+        Ok(self
+            .objects
+            .get(key.as_ref())
+            .map(|guard| Arc::clone(guard.value())) // или guard.value().clone()
+            .ok_or(ErrorNM::NoFindObject)?)
     }
 }
 

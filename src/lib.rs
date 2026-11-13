@@ -1,10 +1,9 @@
 pub mod error;
 pub mod storage;
 
-use std::{
-    sync::{Arc, Weak},
-    time::Duration,
-};
+use std::sync::{Arc, Weak};
+#[cfg(any(feature = "sync-cleaner", feature = "tokio-cleaner"))]
+use std::time::Duration;
 
 pub use error::ErrorNM;
 pub use storage::{
@@ -14,6 +13,7 @@ pub use storage::{
     object::{Object, ToObject, TypeObject},
     ttl::{SystemTtl, TimeTtl},
 };
+
 
 pub struct NestMem {
     pub root: Arc<Group>,
@@ -26,6 +26,7 @@ pub struct NestMem {
 impl NestMem {
     pub fn new() -> Self {
         let root = Group::new_root();
+        #[cfg(any(feature = "sync-cleaner", feature = "tokio-cleaner"))]
         let weak_root = Arc::downgrade(&root);
 
         #[cfg(all(feature = "sync-cleaner", not(feature = "tokio-cleaner")))]
@@ -70,6 +71,11 @@ impl Default for NestMem {
         Self::new()
     }
 }
+
+#[cfg(feature = "storage-walker")]
+mod storagewalker;
+#[cfg(feature = "storage-walker")]
+pub use storagewalker::{error::ErrorSW, StorageWalker};
 
 #[cfg(test)]
 mod test;

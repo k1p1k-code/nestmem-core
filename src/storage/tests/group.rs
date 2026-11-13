@@ -139,11 +139,11 @@ fn test_contains_group_recursive() {
     )
     .unwrap();
 
-    assert!(g1.contains_group(Arc::clone(&g1)));
-    assert!(g1.contains_group(Arc::clone(&g2)));
-    assert!(g1.contains_group(Arc::clone(&g3)));
+    assert!(g1.contains_group(&g1));
+    assert!(g1.contains_group(&g2));
+    assert!(g1.contains_group(&g3));
 
-    assert!(!g1.contains_group(separate_group));
+    assert!(!g1.contains_group(&separate_group));
 }
 
 #[test]

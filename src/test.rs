@@ -1,7 +1,17 @@
-use super::*;
+use crate::{
+    NestMem,
+    GroupTtlPolicy,
+    Object,
+    SystemTtl,
+    storage,
+    ErrorNM,
+    Duration,
+    Arc
+};
+
 
 #[test]
-#[cfg(not(feature = "tokio-cleaner"))]
+#[cfg(feature = "sync-cleaner")]
 fn check_defualt() {
     let nestmem = NestMem::new();
     let _group = Object::group(
@@ -15,7 +25,7 @@ fn check_defualt() {
 }
 
 #[test]
-#[cfg(not(feature = "tokio-cleaner"))]
+#[cfg(feature = "sync-cleaner")]
 fn check_work_ttl_lazy() {
     let nestmem = NestMem::new();
     let group = Object::group(
