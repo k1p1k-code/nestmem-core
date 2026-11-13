@@ -1,4 +1,4 @@
-# Nextmem Core
+# Nestmem Core
 A library that enables structured cache storage with a time-to-live (TTL) feature.
 
 ## Examples
