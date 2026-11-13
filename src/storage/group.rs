@@ -171,11 +171,11 @@ impl Group {
     }
 
     pub fn find_obj_for_key(&self, key: impl AsRef<str>) -> Result<Arc<Object>, ErrorNM>{
-        Ok(self
+        self
             .objects
             .get(key.as_ref())
             .map(|guard| Arc::clone(guard.value())) // или guard.value().clone()
-            .ok_or(ErrorNM::NoFindObject)?)
+            .ok_or(ErrorNM::NoFindObject)
     }
 }
 
