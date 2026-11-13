@@ -1,18 +1,7 @@
-use crate::{
-    NestMem,
-    GroupTtlPolicy,
-    Object,
-    SystemTtl,
-    storage,
-    ErrorNM,
-    Duration,
-    Arc
-};
-
-
 #[test]
 #[cfg(feature = "sync-cleaner")]
 fn check_defualt() {
+    use crate::{GroupTtlPolicy, NestMem, Object};
     let nestmem = NestMem::new();
     let _group = Object::group(
         "Auth".to_string(),
@@ -27,6 +16,8 @@ fn check_defualt() {
 #[test]
 #[cfg(feature = "sync-cleaner")]
 fn check_work_ttl_lazy() {
+    use crate::{ErrorNM, GroupTtlPolicy, NestMem, Object, SystemTtl, TimeTtl};
+    use std::sync::Arc;
     let nestmem = NestMem::new();
     let group = Object::group(
         "auth".to_string(),
@@ -36,7 +27,7 @@ fn check_work_ttl_lazy() {
     )
     .unwrap();
 
-    let ttl = SystemTtl::new(storage::ttl::TimeTtl::Seconds(3));
+    let ttl = SystemTtl::new(TimeTtl::Seconds(3));
     let _item_obj = Object::item(
         "1234_kid".to_string(),
         "my_secret_string".to_string(),
@@ -59,6 +50,7 @@ fn check_work_ttl_lazy() {
 #[tokio::test]
 #[cfg(feature = "tokio-cleaner")]
 async fn check_default_async() {
+    use crate::{GroupTtlPolicy, NestMem, Object};
     let nestmem = NestMem::new();
     let _group = Object::group(
         "Auth".to_string(),
@@ -73,6 +65,8 @@ async fn check_default_async() {
 #[tokio::test]
 #[cfg(feature = "tokio-cleaner")]
 async fn check_work_ttl_async() {
+    use crate::{ErrorNM, GroupTtlPolicy, NestMem, Object, SystemTtl, TimeTtl};
+    use std::sync::Arc;
     let nestmem = NestMem::new();
     let group = Object::group(
         "auth".to_string(),
@@ -82,7 +76,7 @@ async fn check_work_ttl_async() {
     )
     .unwrap();
 
-    let ttl = SystemTtl::new(storage::ttl::TimeTtl::Seconds(2));
+    let ttl = SystemTtl::new(TimeTtl::Seconds(2));
     let _item_obj = Object::item(
         "1234_kid".to_string(),
         "my_secret_string".to_string(),
@@ -93,7 +87,7 @@ async fn check_work_ttl_async() {
 
     assert!(group.get_clone_object("1234_kid").is_ok());
 
-    tokio::time::sleep(Duration::from_secs(3)).await;
+    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
 
     match group.get_clone_object("1234_kid") {
         Ok(e) => panic!("Async TTL did not clean up object: {:?}", e),
@@ -104,11 +98,12 @@ async fn check_work_ttl_async() {
 #[tokio::test]
 #[cfg(feature = "tokio-cleaner")]
 async fn check_worker_stops_after_drop() {
+    use crate::NestMem;
     let weak_root = {
         let nestmem = NestMem::new();
         nestmem.get_root_weak()
     };
 
-    tokio::time::sleep(Duration::from_millis(150)).await;
+    tokio::time::sleep(std::time::Duration::from_millis(150)).await;
     assert!(weak_root.upgrade().is_none());
 }

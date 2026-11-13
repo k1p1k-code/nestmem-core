@@ -14,7 +14,6 @@ pub use storage::{
     ttl::{SystemTtl, TimeTtl},
 };
 
-
 pub struct NestMem {
     pub root: Arc<Group>,
     #[cfg(all(feature = "sync-cleaner", not(feature = "tokio-cleaner")))]
@@ -75,7 +74,7 @@ impl Default for NestMem {
 #[cfg(feature = "storage-walker")]
 mod storagewalker;
 #[cfg(feature = "storage-walker")]
-pub use storagewalker::{error::ErrorSW, StorageWalker};
+pub use storagewalker::{StorageWalker, error::ErrorSW};
 
 #[cfg(test)]
 mod test;

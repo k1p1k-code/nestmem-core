@@ -5,10 +5,10 @@ pub enum ErrorSW {
     ErrorNM(ErrorNM),
     UpHead,
     UnknownDir,
-    InvalidObject
+    InvalidObject,
 }
 
-impl From<ErrorNM> for ErrorSW{
+impl From<ErrorNM> for ErrorSW {
     fn from(value: ErrorNM) -> Self {
         ErrorSW::ErrorNM(value)
     }
