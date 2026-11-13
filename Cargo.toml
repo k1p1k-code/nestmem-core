@@ -1,6 +1,6 @@
 [package]
 name = "nestmen-core"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2024"
 description = "A library that enables structured cache storage in RAM with TTL support"
 license = "Apache-2.0"
