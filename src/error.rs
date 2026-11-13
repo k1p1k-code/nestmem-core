@@ -6,4 +6,6 @@ pub enum ErrorNM {
     UnhandledError,
     ParentNotExist,
     GroupExists,
+    ItemExists,
+    InvalidObject,
 }

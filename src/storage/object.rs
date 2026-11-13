@@ -1,16 +1,23 @@
+use enum_dispatch::enum_dispatch;
+use serde::Serialize;
 use std::sync::{Arc, Weak};
 
-use crate::ErrorNM;
 use crate::storage::group::Group;
 use crate::storage::item::Item;
-use serde::Serialize;
+use crate::{ErrorNM, GroupTtlPolicy, SystemTtl};
+
+#[enum_dispatch]
+pub trait ToObject {
+    fn to_object(&self) -> Result<Arc<Object>, ErrorNM>;
+}
 
 #[derive(Debug, Clone)]
 pub struct Object {
     pub(crate) parent: Weak<Group>,
-    pub typ: TypeObject,
+    pub(crate) typ: TypeObject,
 }
 
+#[enum_dispatch(ToObject)]
 #[derive(Debug, Clone)]
 pub enum TypeObject {
     Item(Arc<Item>),
@@ -27,6 +34,49 @@ impl Object {
                 serde_json::json!(data).to_string()
             }
         }
+    }
+
+    pub fn item(
+        name: String,
+        value: String,
+        ttl: Option<SystemTtl>,
+        parent: Weak<Group>,
+    ) -> Result<Arc<Item>, ErrorNM> {
+        let arc_parent = parent.upgrade().ok_or(ErrorNM::ParentNotExist)?;
+        let mut created_item = None;
+        let arc_object = Arc::new_cyclic(|weak_self| {
+            let item = Item::new(value, ttl, weak_self.clone());
+            created_item = Some(item.clone());
+            Object {
+                parent,
+                typ: TypeObject::Item(item),
+            }
+        });
+        let item = created_item.unwrap();
+        arc_parent.new_item(name, arc_object)?;
+        Ok(item)
+    }
+
+    pub fn group(
+        name: String,
+        allowed_groups: bool,
+        ttl_policy: GroupTtlPolicy,
+        parent: Weak<Group>,
+    ) -> Result<Arc<Group>, ErrorNM> {
+        let arc_parent = parent.upgrade().ok_or(ErrorNM::ParentNotExist)?;
+        let mut created_group = None;
+        let arc_object = Arc::new_cyclic(|weak_self| {
+            let group = Group::new(weak_self.clone(), ttl_policy, allowed_groups);
+            created_group = Some(group.clone());
+            Object {
+                parent,
+                typ: TypeObject::Group(group),
+            }
+        });
+
+        let group = created_group.unwrap();
+        arc_parent.new_group(name, arc_object)?;
+        Ok(group)
     }
 
     pub fn delete(&self) -> Result<(), ErrorNM> {
@@ -61,44 +111,54 @@ impl Object {
     }
 }
 
+impl ToObject for Object {
+    fn to_object(&self) -> Result<Arc<Object>, ErrorNM> {
+        self.typ.to_object()
+    }
+}
+
 #[derive(Serialize)]
 pub struct SendGroup {
     pub items: Vec<Arc<Item>>,
 }
 
+#[cfg(test)]
 mod tests {
+    use super::*;
+    use crate::NestMem;
+
     #[test]
-    fn test_object_delete() {
-        use crate::{NestMem, Group, GroupTtlPolicy, Item};
+    fn test_to_object_lifecycle() {
         let nestmem = NestMem::new();
+        assert_eq!(nestmem.root.to_object().unwrap_err(), ErrorNM::NoFindObject);
+        let group = Object::group(
+            "users".to_string(),
+            true,
+            GroupTtlPolicy::LazyItemTtl,
+            nestmem.get_root_weak(),
+        )
+        .unwrap();
 
-        let sub_group = Group::new(GroupTtlPolicy::LazyItemTtl, true);
-        let sub_group = nestmem
-            .root
-            .new_group("sub_group".to_string(), sub_group)
-            .unwrap();
+        let item = Object::item(
+            "admin".to_string(),
+            "secret".to_string(),
+            None,
+            Arc::downgrade(&group),
+        )
+        .unwrap();
+        let group_obj = group.to_object().expect("Object group must life");
+        let item_obj = item.to_object().expect("Object item must life");
+        let stored_group_obj = nestmem.root.get_clone_object("users").unwrap();
+        assert!(Arc::ptr_eq(&group_obj, &stored_group_obj));
 
-        nestmem
-            .root
-            .new_item("item1".to_string(), Item::new("val1".to_string(), None));
-        nestmem
-            .root
-            .new_item("item2".to_string(), Item::new("val2".to_string(), None));
+        drop(item_obj);
+        group.delete_obj("admin").unwrap();
 
-        let obj_item1 = nestmem.root.get_clone_object("item1").unwrap();
-        assert!(obj_item1.delete().is_ok());
-        assert!(nestmem.root.get_clone_object("item1").is_err());
-        assert!(obj_item1.delete().is_err());
-        assert!(nestmem.root.get_clone_object("item2").is_ok());
+        assert_eq!(item.to_object().unwrap_err(), ErrorNM::NoFindObject);
 
-        let obj_group = nestmem.root.get_clone_object("sub_group").unwrap();
-        assert!(obj_group.delete().is_ok());
-        assert!(nestmem.root.get_clone_object("sub_group").is_err());
-        assert!(
-            nestmem
-                .root
-                .new_group("sub_group_moved".to_string(), sub_group)
-                .is_ok()
-        );
+        group_obj.delete().unwrap();
+        drop(group_obj);
+        drop(stored_group_obj);
+        assert_eq!(group.to_object().unwrap_err(), ErrorNM::NoFindObject);
     }
 }

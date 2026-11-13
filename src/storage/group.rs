@@ -6,25 +6,19 @@ use std::sync::{
 use crate::error::ErrorNM;
 use crate::storage::group_ttl::GroupTtlPolicy;
 use crate::storage::item::Item;
-use crate::storage::object::{Object, TypeObject};
+use crate::storage::object::{Object, ToObject, TypeObject};
 use dashmap::{DashMap, Entry};
 
 #[derive(Debug)]
 pub struct Group {
     self_weak: Weak<Group>,
+    object: Option<Weak<Object>>,
     pub(crate) is_attached: AtomicBool,
-    pub(crate) objects: DashMap<String, Object>,
+    pub(crate) objects: DashMap<String, Arc<Object>>,
     ttl_policy: GroupTtlPolicy,
     allowed_groups: bool,
 }
 impl Group {
-    pub(crate) fn create_obj(&self, obj: TypeObject) -> Object {
-        Object {
-            parent: self.self_weak.clone(),
-            typ: obj,
-        }
-    }
-
     pub fn contains_group(&self, group: Arc<Group>) -> bool {
         if std::ptr::eq(self.self_weak.as_ptr(), Arc::as_ptr(&group)) {
             return true;
@@ -41,6 +35,7 @@ impl Group {
     pub fn new_root() -> Arc<Self> {
         Arc::new_cyclic(|weak_self| Group {
             self_weak: weak_self.clone(),
+            object: None,
             is_attached: AtomicBool::new(true),
             objects: DashMap::new(),
             ttl_policy: GroupTtlPolicy::LazyItemTtl,
@@ -48,9 +43,14 @@ impl Group {
         })
     }
 
-    pub fn new(ttl_policy: GroupTtlPolicy, allowed_groups: bool) -> Arc<Self> {
+    pub fn new(
+        object: Weak<Object>,
+        ttl_policy: GroupTtlPolicy,
+        allowed_groups: bool,
+    ) -> Arc<Self> {
         Arc::new_cyclic(|weak_self| Group {
             self_weak: weak_self.clone(),
+            object: Some(object),
             is_attached: AtomicBool::new(false),
             objects: DashMap::new(),
             ttl_policy,
@@ -58,11 +58,26 @@ impl Group {
         })
     }
 
-    pub fn get_clone_object<K: AsRef<str>>(&self, key: K) -> Result<Object, ErrorNM> {
+    pub fn get_clone_object<K: AsRef<str>>(&self, key: K) -> Result<Arc<Object>, ErrorNM> {
         self.objects
             .get(key.as_ref())
             .map(|r| r.value().clone())
             .ok_or(ErrorNM::NoFindObject)
+    }
+
+    pub fn ls(&self) -> Vec<Arc<Object>> {
+        self.objects
+            .iter()
+            .map(|entry| Arc::clone(entry.value()))
+            .collect()
+    }
+
+    pub fn len(&self) -> usize {
+        self.objects.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.objects.is_empty()
     }
 
     pub fn withinme_items(&self) -> Vec<Arc<Item>> {
@@ -75,24 +90,31 @@ impl Group {
             .collect()
     }
 
-    fn new_object(&self, key: String, object: Object) {
-        if let Some(old_obj) = self.objects.insert(key, object)
-            && let TypeObject::Group(old_group) = old_obj.typ
-        {
-            old_group.is_attached.store(false, Ordering::Release);
+    pub fn new_item(&self, key: String, obj: Arc<Object>) -> Result<Arc<Item>, ErrorNM> {
+        // self.new_object(key, obj);
+        let TypeObject::Item(item) = &obj.typ else {
+            return Err(ErrorNM::InvalidObject);
+        };
+        let item = Arc::clone(item);
+        match self.objects.entry(key) {
+            Entry::Occupied(_) => Err(ErrorNM::ItemExists),
+            Entry::Vacant(vacant) => {
+                vacant.insert(obj);
+                Ok(item)
+            }
         }
     }
 
-    pub fn new_item(&self, key: String, item: Item) {
-        self.new_object(key, self.create_obj(TypeObject::Item(Arc::new(item))))
-    }
-
-    pub fn new_group(&self, name: String, group: Arc<Group>) -> Result<Arc<Group>, ErrorNM> {
+    pub fn new_group(&self, key: String, obj: Arc<Object>) -> Result<Arc<Group>, ErrorNM> {
         if !self.allowed_groups {
             return Err(ErrorNM::NoPermissionCreateGroup);
         }
 
-        match self.objects.entry(name) {
+        let TypeObject::Group(group) = &obj.typ else {
+            return Err(ErrorNM::InvalidObject);
+        };
+        let group = Arc::clone(group);
+        match self.objects.entry(key) {
             Entry::Occupied(_) => Err(ErrorNM::GroupExists),
             Entry::Vacant(vacant) => {
                 if group
@@ -103,7 +125,6 @@ impl Group {
                     return Err(ErrorNM::GroupExists);
                 }
 
-                let obj = self.create_obj(TypeObject::Group(group.clone()));
                 vacant.insert(obj);
                 Ok(group)
             }
@@ -116,7 +137,7 @@ impl Group {
             .remove(key.as_ref())
             .ok_or(ErrorNM::NoFindObject)?;
 
-        if let TypeObject::Group(group) = object.typ {
+        if let TypeObject::Group(group) = &object.typ {
             group.is_attached.store(false, Ordering::Release);
         }
 
@@ -146,5 +167,15 @@ impl Group {
         for i in group_store {
             i.cleanup();
         }
+    }
+}
+
+impl ToObject for Arc<Group> {
+    fn to_object(&self) -> Result<Arc<Object>, ErrorNM> {
+        self.object
+            .as_ref()
+            .ok_or(ErrorNM::NoFindObject)?
+            .upgrade()
+            .ok_or(ErrorNM::NoFindObject)
     }
 }

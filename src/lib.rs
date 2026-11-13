@@ -2,14 +2,18 @@ pub mod error;
 pub mod storage;
 
 use std::{
-    sync::Arc,
+    sync::{Arc, Weak},
     thread::{self, JoinHandle},
     time::Duration,
 };
 
 pub use error::ErrorNM;
 pub use storage::{
-    group::Group, group_ttl::GroupTtlPolicy, item::Item, object::Object, ttl::SystemTtl,
+    group::Group,
+    group_ttl::GroupTtlPolicy,
+    item::Item,
+    object::{Object, ToObject, TypeObject},
+    ttl::{SystemTtl, TimeTtl},
 };
 
 pub struct NestMem {
@@ -37,6 +41,10 @@ impl NestMem {
             _bg_worker_lazy: bg_worker_lazy,
         }
     }
+
+    pub fn get_root_weak(&self) -> Weak<Group> {
+        Arc::downgrade(&self.root)
+    }
 }
 
 impl Default for NestMem {
@@ -48,33 +56,46 @@ impl Default for NestMem {
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unnecessary_to_owned)]
-
     use super::*;
     #[test]
     fn check_defualt() {
         let nestmem = NestMem::new();
-        let group = Group::new(GroupTtlPolicy::LazyItemTtl, true);
-        let group = nestmem.root.new_group("auth".to_string(), group).unwrap();
-        let item = Item::new("my_secret_string".to_string(), None);
-        group.new_item("1234_kid".to_string(), item);
-        let obj = group.get_clone_object("1234_kid".to_string()).unwrap();
-        println!("{:?}", obj);
+        let _group = Object::group(
+            "Auth".to_string(),
+            false,
+            GroupTtlPolicy::LazyItemTtl,
+            nestmem.get_root_weak(),
+        )
+        .unwrap();
+        assert_eq!(1, nestmem.root.len())
     }
 
     #[test]
     fn check_work_ttl_lazy() {
         let nestmem = NestMem::new();
-        let group = Group::new(GroupTtlPolicy::LazyItemTtl, false);
-        let group = nestmem.root.new_group("auth".to_string(), group).unwrap();
+        let group = Object::group(
+            "auth".to_string(),
+            false,
+            GroupTtlPolicy::LazyItemTtl,
+            nestmem.get_root_weak(),
+        )
+        .unwrap();
+
         let ttl = SystemTtl::new(storage::ttl::TimeTtl::Seconds(3));
-        let item = Item::new("my_secret_string".to_string(), Some(ttl));
-        #[allow(clippy::unnecessary_to_owned)]
-        group.new_item("1234_kid".to_string(), item);
-        thread::sleep(Duration::from_secs(5));
-        match group.get_clone_object("1234_kid".to_string()) {
+        let _item_obj = Object::item(
+            "1234_kid".to_string(),
+            "my_secret_string".to_string(),
+            Some(ttl),
+            Arc::downgrade(&group),
+        )
+        .unwrap();
+
+        std::thread::sleep(std::time::Duration::from_secs(5));
+
+        match group.get_clone_object("1234_kid") {
             Ok(e) => {
                 println!("{:?}", e);
-                panic!("TTl lazy no work")
+                panic!("TTL lazy no work");
             }
             Err(e) => assert_eq!(e, ErrorNM::NoFindObject, "I must not find her"),
         }
