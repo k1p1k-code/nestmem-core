@@ -62,6 +62,8 @@ let _orders = Object::group(
 .unwrap();
 products_walker.cd_str("orders").unwrap();
 ```
+**It is important to note that the NestMem structure is an extension of Group that handles cache removal (TTL). [src/lib.rs](src/lib.rs#L28-L55)**
+---
 **The library is still in the development phase and is not ready for full-scale use.**
 
 ---
