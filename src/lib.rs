@@ -65,6 +65,11 @@ impl NestMem {
     }
 }
 
+impl Default for NestMem {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[cfg(test)]
 mod test;

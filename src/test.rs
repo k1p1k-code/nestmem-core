@@ -46,7 +46,6 @@ fn check_work_ttl_lazy() {
     }
 }
 
-
 #[tokio::test]
 #[cfg(feature = "tokio-cleaner")]
 async fn check_default_async() {
@@ -98,7 +97,7 @@ async fn check_worker_stops_after_drop() {
     let weak_root = {
         let nestmem = NestMem::new();
         nestmem.get_root_weak()
-    }; 
+    };
 
     tokio::time::sleep(Duration::from_millis(150)).await;
     assert!(weak_root.upgrade().is_none());
