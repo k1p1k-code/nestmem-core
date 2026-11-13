@@ -28,7 +28,7 @@ match group.get_clone_object("1234_kid") {
         println!("{:?}", e);
         panic!("TTL lazy no work");
     }
-    Err(e) => assert_eq!(e, ErrorNM::NoFindObject, "I must not find her"),
+    Err(e) => assert_eq!(e, ErrorNM::ObjectNotFound, "I must not find her"),
 }
 ```
 feature storage-walker
