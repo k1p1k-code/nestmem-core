@@ -125,11 +125,11 @@ pub struct SendGroup {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::NestMem;
+    use crate::{NestMem, CleanerThread};
 
     #[test]
     fn test_to_object_lifecycle() {
-        let nestmem = NestMem::new();
+        let nestmem: NestMem<CleanerThread> = NestMem::new();
         assert_eq!(nestmem.root.to_object().unwrap_err(), ErrorNM::ObjectNotFound);
         let group = Object::group(
             "users".to_string(),

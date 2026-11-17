@@ -8,7 +8,7 @@ use crate::*;
 
 #[test]
 fn test_group_creation_and_permissions() {
-    let nestmem = NestMem::new();
+    let nestmem: NestMem<CleanerThread> = NestMem::new();
     assert_eq!(nestmem.root.to_object().unwrap_err(), ErrorNM::ObjectNotFound);
     assert!(nestmem.root.is_attached.load(Ordering::Acquire));
 
@@ -50,7 +50,7 @@ fn test_group_creation_and_permissions() {
 
 #[test]
 fn test_items_lookup_and_filtering() {
-    let nestmem = NestMem::new();
+    let nestmem: NestMem<CleanerThread> = NestMem::new();
 
     let group = Object::group(
         "data".to_string(),
@@ -105,7 +105,7 @@ fn test_items_lookup_and_filtering() {
 
 #[test]
 fn test_contains_group_recursive() {
-    let nestmem = NestMem::new();
+    let nestmem: NestMem<CleanerThread> = NestMem::new();
 
     let g1 = Object::group(
         "g1".to_string(),
@@ -148,7 +148,7 @@ fn test_contains_group_recursive() {
 
 #[test]
 fn test_delete_obj_and_to_object_lifecycle() {
-    let nestmem = NestMem::new();
+    let nestmem: NestMem<CleanerThread> = NestMem::new();
 
     let group = Object::group(
         "users".to_string(),
@@ -188,7 +188,7 @@ fn test_delete_obj_and_to_object_lifecycle() {
 
 #[test]
 fn test_cleanup_ttl() {
-    let nestmem = NestMem::new();
+    let nestmem: NestMem<CleanerThread> = NestMem::new();
 
     let group = Object::group(
         "cache".to_string(),
@@ -234,7 +234,7 @@ fn test_cleanup_ttl() {
 
 #[test]
 fn test_concurrent_access_and_uniqueness() {
-    let nestmem = Arc::new(NestMem::new());
+    let nestmem: Arc<NestMem<CleanerThread>> = Arc::new(NestMem::new());
     let threads = 16;
     let barrier = Arc::new(Barrier::new(threads));
     let mut handles = Vec::with_capacity(threads);

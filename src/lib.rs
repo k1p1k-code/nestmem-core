@@ -1,10 +1,9 @@
 pub mod error;
 pub mod storage;
+mod cleaner;
+
 
 use std::sync::{Arc, Weak};
-#[cfg(any(feature = "sync-cleaner", feature = "tokio-cleaner"))]
-use std::time::Duration;
-
 pub use error::ErrorNM;
 pub use storage::{
     group::Group,
@@ -13,50 +12,21 @@ pub use storage::{
     object::{Object, ToObject, TypeObject},
     ttl::{SystemTtl, TimeTtl},
 };
+pub use cleaner::*;
 
-pub struct NestMem {
+pub struct NestMem<C: CleanerTrait>{
     pub root: Arc<Group>,
-    #[cfg(all(feature = "sync-cleaner", not(feature = "tokio-cleaner")))]
-    _bg_worker_lazy: std::thread::JoinHandle<()>,
-    #[cfg(feature = "tokio-cleaner")]
-    _bg_worker_lazy: Option<tokio::task::JoinHandle<()>>,
+    provide_cleaner: C
 }
 
-impl NestMem {
+impl <C: CleanerTrait>NestMem<C> {
     pub fn new() -> Self {
         let root = Group::new_root();
-        #[cfg(any(feature = "sync-cleaner", feature = "tokio-cleaner"))]
-        let weak_root = Arc::downgrade(&root);
-
-        #[cfg(all(feature = "sync-cleaner", not(feature = "tokio-cleaner")))]
-        let bg_worker_lazy = std::thread::spawn(move || {
-            loop {
-                std::thread::sleep(Duration::from_millis(100));
-                match weak_root.upgrade() {
-                    Some(root) => root.cleanup(),
-                    None => break,
-                }
-            }
-        });
-
-        #[cfg(feature = "tokio-cleaner")]
-        let bg_worker_lazy = tokio::runtime::Handle::try_current().ok().map(|handle| {
-            handle.spawn(async move {
-                let mut interval = tokio::time::interval(Duration::from_millis(100));
-                loop {
-                    interval.tick().await;
-                    match weak_root.upgrade() {
-                        Some(root) => root.cleanup(),
-                        None => break,
-                    }
-                }
-            })
-        });
+        let provide_cleaner = C::new(Arc::downgrade(&root));
 
         Self {
             root,
-            #[cfg(any(feature = "sync-cleaner", feature = "tokio-cleaner"))]
-            _bg_worker_lazy: bg_worker_lazy,
+            provide_cleaner
         }
     }
 
@@ -65,7 +35,7 @@ impl NestMem {
     }
 }
 
-impl Default for NestMem {
+impl <C: CleanerTrait>Default for NestMem<C> {
     fn default() -> Self {
         Self::new()
     }

@@ -3,7 +3,7 @@ use error::ErrorSW;
 
 use std::sync::Arc;
 
-use crate::{ErrorNM, Group, NestMem, ToObject, TypeObject};
+use crate::{ErrorNM, Group, NestMem, ToObject, TypeObject, CleanerTrait};
 
 pub struct StorageWalker {
     current_dir: Arc<Group>,
@@ -11,7 +11,7 @@ pub struct StorageWalker {
 }
 
 impl StorageWalker {
-    pub fn from_nestmem(nestmem: &NestMem) -> Self {
+    pub fn from_nestmem<C: CleanerTrait>(nestmem: &NestMem<C>) -> Self {
         Self {
             current_dir: nestmem.root.clone(),
             root_dir: nestmem.root.clone(),

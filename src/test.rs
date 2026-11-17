@@ -1,8 +1,8 @@
 #[test]
 #[cfg(feature = "sync-cleaner")]
 fn check_defualt() {
-    use crate::{GroupTtlPolicy, NestMem, Object};
-    let nestmem = NestMem::new();
+    use crate::{GroupTtlPolicy, NestMem, Object, CleanerThread};
+    let nestmem: NestMem<CleanerThread> = NestMem::new();
     let _group = Object::group(
         "Auth".to_string(),
         false,
@@ -16,9 +16,9 @@ fn check_defualt() {
 #[test]
 #[cfg(feature = "sync-cleaner")]
 fn check_work_ttl_lazy() {
-    use crate::{ErrorNM, GroupTtlPolicy, NestMem, Object, SystemTtl, TimeTtl};
+    use crate::{ErrorNM, GroupTtlPolicy, NestMem, Object, SystemTtl, TimeTtl, CleanerThread};
     use std::sync::Arc;
-    let nestmem = NestMem::new();
+    let nestmem: NestMem<CleanerThread> = NestMem::new();
     let group = Object::group(
         "auth".to_string(),
         false,
@@ -50,8 +50,8 @@ fn check_work_ttl_lazy() {
 #[tokio::test]
 #[cfg(feature = "tokio-cleaner")]
 async fn check_default_async() {
-    use crate::{GroupTtlPolicy, NestMem, Object};
-    let nestmem = NestMem::new();
+    use crate::{GroupTtlPolicy, NestMem, Object, CleanerTokio};
+    let nestmem: NestMem<CleanerTokio> = NestMem::new();
     let _group = Object::group(
         "Auth".to_string(),
         false,
@@ -65,9 +65,9 @@ async fn check_default_async() {
 #[tokio::test]
 #[cfg(feature = "tokio-cleaner")]
 async fn check_work_ttl_async() {
-    use crate::{ErrorNM, GroupTtlPolicy, NestMem, Object, SystemTtl, TimeTtl};
+    use crate::{ErrorNM, GroupTtlPolicy, NestMem, Object, SystemTtl, TimeTtl, CleanerTokio};
     use std::sync::Arc;
-    let nestmem = NestMem::new();
+    let nestmem: NestMem<CleanerTokio> = NestMem::new();
     let group = Object::group(
         "auth".to_string(),
         false,
@@ -98,9 +98,9 @@ async fn check_work_ttl_async() {
 #[tokio::test]
 #[cfg(feature = "tokio-cleaner")]
 async fn check_worker_stops_after_drop() {
-    use crate::NestMem;
+    use crate::{NestMem, CleanerTokio};
     let weak_root = {
-        let nestmem = NestMem::new();
+        let nestmem: NestMem<CleanerTokio> = NestMem::new();
         nestmem.get_root_weak()
     };
 
