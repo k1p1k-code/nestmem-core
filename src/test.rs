@@ -1,7 +1,7 @@
 #[test]
 #[cfg(feature = "sync-cleaner")]
 fn check_defualt() {
-    use crate::{GroupTtlPolicy, NestMem, Object, CleanerThread};
+    use crate::{CleanerThread, GroupTtlPolicy, NestMem, Object};
     let nestmem: NestMem<CleanerThread> = NestMem::new();
     let _group = Object::group(
         "Auth".to_string(),
@@ -16,7 +16,7 @@ fn check_defualt() {
 #[test]
 #[cfg(feature = "sync-cleaner")]
 fn check_work_ttl_lazy() {
-    use crate::{ErrorNM, GroupTtlPolicy, NestMem, Object, SystemTtl, TimeTtl, CleanerThread};
+    use crate::{CleanerThread, ErrorNM, GroupTtlPolicy, NestMem, Object, SystemTtl, TimeTtl};
     use std::sync::Arc;
     let nestmem: NestMem<CleanerThread> = NestMem::new();
     let group = Object::group(
@@ -50,7 +50,7 @@ fn check_work_ttl_lazy() {
 #[tokio::test]
 #[cfg(feature = "tokio-cleaner")]
 async fn check_default_async() {
-    use crate::{GroupTtlPolicy, NestMem, Object, CleanerTokio};
+    use crate::{CleanerTokio, GroupTtlPolicy, NestMem, Object};
     let nestmem: NestMem<CleanerTokio> = NestMem::new();
     let _group = Object::group(
         "Auth".to_string(),
@@ -65,7 +65,7 @@ async fn check_default_async() {
 #[tokio::test]
 #[cfg(feature = "tokio-cleaner")]
 async fn check_work_ttl_async() {
-    use crate::{ErrorNM, GroupTtlPolicy, NestMem, Object, SystemTtl, TimeTtl, CleanerTokio};
+    use crate::{CleanerTokio, ErrorNM, GroupTtlPolicy, NestMem, Object, SystemTtl, TimeTtl};
     use std::sync::Arc;
     let nestmem: NestMem<CleanerTokio> = NestMem::new();
     let group = Object::group(
@@ -98,7 +98,7 @@ async fn check_work_ttl_async() {
 #[tokio::test]
 #[cfg(feature = "tokio-cleaner")]
 async fn check_worker_stops_after_drop() {
-    use crate::{NestMem, CleanerTokio};
+    use crate::{CleanerTokio, NestMem};
     let weak_root = {
         let nestmem: NestMem<CleanerTokio> = NestMem::new();
         nestmem.get_root_weak()

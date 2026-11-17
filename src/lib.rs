@@ -1,10 +1,10 @@
+mod cleaner;
 pub mod error;
 pub mod storage;
-mod cleaner;
 
-
-use std::sync::{Arc, Weak};
+pub use cleaner::*;
 pub use error::ErrorNM;
+use std::sync::{Arc, Weak};
 pub use storage::{
     group::Group,
     group_ttl::GroupTtlPolicy,
@@ -12,22 +12,18 @@ pub use storage::{
     object::{Object, ToObject, TypeObject},
     ttl::{SystemTtl, TimeTtl},
 };
-pub use cleaner::*;
 
-pub struct NestMem<C: CleanerTrait>{
+pub struct NestMem<C: CleanerTrait> {
     pub root: Arc<Group>,
-    provide_cleaner: C
+    pub cleaner: C,
 }
 
-impl <C: CleanerTrait>NestMem<C> {
+impl<C: CleanerTrait> NestMem<C> {
     pub fn new() -> Self {
         let root = Group::new_root();
-        let provide_cleaner = C::new(Arc::downgrade(&root));
+        let cleaner = C::new(Arc::downgrade(&root));
 
-        Self {
-            root,
-            provide_cleaner
-        }
+        Self { root, cleaner }
     }
 
     pub fn get_root_weak(&self) -> Weak<Group> {
@@ -35,7 +31,7 @@ impl <C: CleanerTrait>NestMem<C> {
     }
 }
 
-impl <C: CleanerTrait>Default for NestMem<C> {
+impl<C: CleanerTrait> Default for NestMem<C> {
     fn default() -> Self {
         Self::new()
     }

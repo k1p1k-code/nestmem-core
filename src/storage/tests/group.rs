@@ -8,8 +8,11 @@ use crate::*;
 
 #[test]
 fn test_group_creation_and_permissions() {
-    let nestmem: NestMem<CleanerThread> = NestMem::new();
-    assert_eq!(nestmem.root.to_object().unwrap_err(), ErrorNM::ObjectNotFound);
+    let nestmem: NestMem<NoCleaner> = NestMem::new();
+    assert_eq!(
+        nestmem.root.to_object().unwrap_err(),
+        ErrorNM::ObjectNotFound
+    );
     assert!(nestmem.root.is_attached.load(Ordering::Acquire));
 
     let leaf_group = Object::group(
@@ -50,7 +53,7 @@ fn test_group_creation_and_permissions() {
 
 #[test]
 fn test_items_lookup_and_filtering() {
-    let nestmem: NestMem<CleanerThread> = NestMem::new();
+    let nestmem: NestMem<NoCleaner> = NestMem::new();
 
     let group = Object::group(
         "data".to_string(),
@@ -105,7 +108,7 @@ fn test_items_lookup_and_filtering() {
 
 #[test]
 fn test_contains_group_recursive() {
-    let nestmem: NestMem<CleanerThread> = NestMem::new();
+    let nestmem: NestMem<NoCleaner> = NestMem::new();
 
     let g1 = Object::group(
         "g1".to_string(),
@@ -148,7 +151,7 @@ fn test_contains_group_recursive() {
 
 #[test]
 fn test_delete_obj_and_to_object_lifecycle() {
-    let nestmem: NestMem<CleanerThread> = NestMem::new();
+    let nestmem: NestMem<NoCleaner> = NestMem::new();
 
     let group = Object::group(
         "users".to_string(),
@@ -188,7 +191,7 @@ fn test_delete_obj_and_to_object_lifecycle() {
 
 #[test]
 fn test_cleanup_ttl() {
-    let nestmem: NestMem<CleanerThread> = NestMem::new();
+    let nestmem: NestMem<NoCleaner> = NestMem::new();
 
     let group = Object::group(
         "cache".to_string(),
@@ -228,13 +231,16 @@ fn test_cleanup_ttl() {
         ErrorNM::ObjectNotFound
     );
 
-    assert_eq!(expired_item.to_object().unwrap_err(), ErrorNM::ObjectNotFound);
+    assert_eq!(
+        expired_item.to_object().unwrap_err(),
+        ErrorNM::ObjectNotFound
+    );
     assert!(alive_item.to_object().is_ok());
 }
 
 #[test]
 fn test_concurrent_access_and_uniqueness() {
-    let nestmem: Arc<NestMem<CleanerThread>> = Arc::new(NestMem::new());
+    let nestmem: Arc<NestMem<NoCleaner>> = Arc::new(NestMem::new());
     let threads = 16;
     let barrier = Arc::new(Barrier::new(threads));
     let mut handles = Vec::with_capacity(threads);

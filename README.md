@@ -3,7 +3,7 @@ A library that enables structured cache storage with a time-to-live (TTL) featur
 
 ## Examples
 ``` rust
-let nestmem = NestMem::new();
+let nestmem: NestMem<CleanerThread> = NestMem::new();
 let group = Object::group(
     "auth".to_string(),
     false,

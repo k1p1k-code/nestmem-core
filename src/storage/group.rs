@@ -173,7 +173,11 @@ impl Group {
     pub fn find_obj_for_key(&self, key: impl AsRef<str>) -> Result<Arc<Object>, ErrorNM> {
         self.objects
             .get(key.as_ref())
-            .map(|guard: dashmap::mapref::one::Ref<'_, String, Arc<Object>>| Arc::clone(guard.value())) // или guard.value().clone()
+            .map(
+                |guard: dashmap::mapref::one::Ref<'_, String, Arc<Object>>| {
+                    Arc::clone(guard.value())
+                },
+            ) // или guard.value().clone()
             .ok_or(ErrorNM::ObjectNotFound)
     }
 }
