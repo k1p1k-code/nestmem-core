@@ -3,7 +3,7 @@ use error::ErrorSW;
 
 use std::sync::Arc;
 
-use crate::{CleanerTrait, ErrorNM, Group, NestMem, ToObject, TypeObject};
+use crate::{CleanerTrait, ErrorNM, Group, NestMem, ToObject, ObjectType};
 
 pub struct StorageWalker {
     current_dir: Arc<Group>,
@@ -46,7 +46,7 @@ impl StorageWalker {
     }
 
     pub fn cd_str(&mut self, name: impl AsRef<str>) -> Result<(), ErrorSW> {
-        let TypeObject::Group(group) = &self.current_dir.find_obj_for_key(name)?.typ else {
+        let ObjectType::Group(group) = &self.current_dir.find_obj_for_key(name)?.typ else {
             return Err(ErrorSW::InvalidObject);
         };
         self.current_dir = group.clone();

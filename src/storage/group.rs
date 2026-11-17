@@ -6,7 +6,7 @@ use std::sync::{
 use crate::error::ErrorNM;
 use crate::storage::group_ttl::GroupTtlPolicy;
 use crate::storage::item::Item;
-use crate::storage::object::{Object, ToObject, TypeObject};
+use crate::storage::object::{Object, ToObject, ObjectType};
 use dashmap::{DashMap, Entry};
 
 #[derive(Debug)]
@@ -25,7 +25,7 @@ impl Group {
             return true;
         }
         self.objects.iter().any(|entry| {
-            if let TypeObject::Group(child_group) = &entry.value().typ {
+            if let ObjectType::Group(child_group) = &entry.value().typ {
                 Arc::ptr_eq(child_group, group) || child_group.contains_group(group)
             } else {
                 false
@@ -85,15 +85,15 @@ impl Group {
         self.objects
             .iter()
             .filter_map(|r| match &r.value().typ {
-                TypeObject::Item(e) => Some(e.clone()),
-                TypeObject::Group(_) => None,
+                ObjectType::Item(e) => Some(e.clone()),
+                ObjectType::Group(_) => None,
             })
             .collect()
     }
 
     pub fn new_item(&self, key: String, obj: Arc<Object>) -> Result<Arc<Item>, ErrorNM> {
         // self.new_object(key, obj);
-        let TypeObject::Item(item) = &obj.typ else {
+        let ObjectType::Item(item) = &obj.typ else {
             return Err(ErrorNM::InvalidObject);
         };
         let item = Arc::clone(item);
@@ -111,7 +111,7 @@ impl Group {
             return Err(ErrorNM::NoPermissionCreateGroup);
         }
 
-        let TypeObject::Group(group) = &obj.typ else {
+        let ObjectType::Group(group) = &obj.typ else {
             return Err(ErrorNM::InvalidObject);
         };
         let group = Arc::clone(group);
@@ -138,7 +138,7 @@ impl Group {
             .remove(key.as_ref())
             .ok_or(ErrorNM::ObjectNotFound)?;
 
-        if let TypeObject::Group(group) = &object.typ {
+        if let ObjectType::Group(group) = &object.typ {
             group.is_attached.store(false, Ordering::Release);
         }
 
@@ -148,7 +148,7 @@ impl Group {
     pub fn cleanup(&self) {
         let mut group_store = vec![];
         self.objects.retain(|_key, object| {
-            if let TypeObject::Item(item) = &object.typ {
+            if let ObjectType::Item(item) = &object.typ {
                 match &self.ttl_policy {
                     GroupTtlPolicy::LazyItemTtl => {
                         return item.ttl.as_ref().is_none_or(|ttl| !ttl.is_expire());
@@ -159,7 +159,7 @@ impl Group {
                     }
                 }
             }
-            if let TypeObject::Group(group) = &object.typ {
+            if let ObjectType::Group(group) = &object.typ {
                 group_store.push(Arc::clone(group));
                 return true;
             }

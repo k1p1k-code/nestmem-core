@@ -9,7 +9,7 @@ pub use storage::{
     group::Group,
     group_ttl::GroupTtlPolicy,
     item::Item,
-    object::{Object, ToObject, TypeObject},
+    object::{Object, ToObject, ObjectType},
     ttl::{SystemTtl, TimeTtl},
 };
 

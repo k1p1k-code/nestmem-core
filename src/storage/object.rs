@@ -14,12 +14,12 @@ pub trait ToObject {
 #[derive(Debug, Clone)]
 pub struct Object {
     pub(crate) parent: Weak<Group>,
-    pub(crate) typ: TypeObject,
+    pub(crate) typ: ObjectType,
 }
 
 #[enum_dispatch(ToObject)]
 #[derive(Debug, Clone)]
-pub enum TypeObject {
+pub enum ObjectType {
     Item(Arc<Item>),
     Group(Arc<Group>),
 }
@@ -27,8 +27,8 @@ pub enum TypeObject {
 impl Object {
     pub fn get_value(&self) -> String {
         match &self.typ {
-            TypeObject::Item(i) => i.value.clone(),
-            TypeObject::Group(g) => {
+            ObjectType::Item(i) => i.value.clone(),
+            ObjectType::Group(g) => {
                 let items = g.withinme_items();
                 let data = SendGroup { items };
                 serde_json::json!(data).to_string()
@@ -49,7 +49,7 @@ impl Object {
             created_item = Some(item.clone());
             Object {
                 parent,
-                typ: TypeObject::Item(item),
+                typ: ObjectType::Item(item),
             }
         });
         let item = created_item.unwrap();
@@ -70,7 +70,7 @@ impl Object {
             created_group = Some(group.clone());
             Object {
                 parent,
-                typ: TypeObject::Group(group),
+                typ: ObjectType::Group(group),
             }
         });
 
@@ -85,7 +85,7 @@ impl Object {
         parent
             .objects
             .retain(|_key, obj| match (&self.typ, &obj.typ) {
-                (TypeObject::Group(g1), TypeObject::Group(g2)) => {
+                (ObjectType::Group(g1), ObjectType::Group(g2)) => {
                     if Arc::ptr_eq(g1, g2) {
                         g2.is_attached
                             .store(false, std::sync::atomic::Ordering::Release);
@@ -94,7 +94,7 @@ impl Object {
                     }
                     true
                 }
-                (TypeObject::Item(i1), TypeObject::Item(i2)) => {
+                (ObjectType::Item(i1), ObjectType::Item(i2)) => {
                     if Arc::ptr_eq(i1, i2) {
                         deleted = true;
                         return false;
