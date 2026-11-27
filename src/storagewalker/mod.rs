@@ -6,7 +6,7 @@ use std::sync::Arc;
 use crate::{CleanerTrait, ErrorNM, Group, NestMem, ToObject, ObjectType};
 
 pub struct StorageWalker {
-    current_dir: Arc<Group>,
+    pub current_dir: Arc<Group>,
     root_dir: Arc<Group>,
 }
 
