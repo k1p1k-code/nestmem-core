@@ -20,6 +20,10 @@ impl Item {
     pub fn to_object(&self) -> Result<Arc<Object>, ErrorNM> {
         self.object.upgrade().ok_or(ErrorNM::ObjectNotFound)
     }
+
+    pub fn get_value(&self) -> String{
+        self.value.clone()
+    }
 }
 
 impl ToObject for Arc<Item> {
