@@ -14,7 +14,7 @@ pub trait ToObject {
 #[derive(Debug, Clone)]
 pub struct Object {
     pub(crate) parent: Weak<Group>,
-    pub(crate) typ: ObjectType,
+    pub typ: ObjectType,
 }
 
 #[enum_dispatch(ToObject)]
