@@ -19,6 +19,13 @@ impl SystemTtl {
     pub fn is_expire(&self) -> bool {
         self.create_at.elapsed() >= self.time.to_duration()
     }
+
+    pub fn remaining_secs(&self) -> u64 {
+        self.time
+            .to_duration()
+            .saturating_sub(self.create_at.elapsed())
+            .as_secs()
+    }
 }
 
 #[derive(Debug, Serialize, Clone)]
