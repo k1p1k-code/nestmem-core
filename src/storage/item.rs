@@ -21,11 +21,11 @@ impl Item {
         self.object.upgrade().ok_or(ErrorNM::ObjectNotFound)
     }
 
-    pub fn get_value(&self) -> String{
+    pub fn get_value(&self) -> String {
         self.value.clone()
     }
 
-    pub fn get_ttl(&self) -> Option<SystemTtl>{
+    pub fn get_ttl(&self) -> Option<SystemTtl> {
         self.ttl.clone()
     }
 }

@@ -1,9 +1,9 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SystemTtl {
-    #[serde(skip)]
+    #[serde(skip, default = "Instant::now")]
     pub create_at: Instant,
     pub time: TimeTtl,
 }
@@ -28,7 +28,7 @@ impl SystemTtl {
     }
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum TimeTtl {
     Minutes(u64),
     Seconds(u64),

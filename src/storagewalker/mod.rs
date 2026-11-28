@@ -3,7 +3,7 @@ use error::ErrorSW;
 
 use std::sync::Arc;
 
-use crate::{CleanerTrait, ErrorNM, Group, NestMem, ToObject, ObjectType};
+use crate::{CleanerTrait, ErrorNM, Group, NestMem, ObjectType, ToObject};
 
 pub struct StorageWalker {
     pub current_dir: Arc<Group>,

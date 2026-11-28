@@ -6,7 +6,7 @@ use std::sync::{
 use crate::error::ErrorNM;
 use crate::storage::group_ttl::GroupTtlPolicy;
 use crate::storage::item::Item;
-use crate::storage::object::{Object, ToObject, ObjectType};
+use crate::storage::object::{Object, ObjectType, ToObject};
 use dashmap::{DashMap, Entry};
 
 #[derive(Debug)]
