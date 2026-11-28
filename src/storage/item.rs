@@ -24,6 +24,10 @@ impl Item {
     pub fn get_value(&self) -> String{
         self.value.clone()
     }
+
+    pub fn get_ttl(&self) -> Option<SystemTtl>{
+        self.ttl.clone()
+    }
 }
 
 impl ToObject for Arc<Item> {
