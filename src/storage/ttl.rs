@@ -28,7 +28,7 @@ pub enum TimeTtl {
 }
 
 impl TimeTtl {
-    fn to_duration(&self) -> Duration {
+    pub fn to_duration(&self) -> Duration {
         match self {
             TimeTtl::Minutes(t) => Duration::from_mins(*t),
             TimeTtl::Seconds(t) => Duration::from_secs(*t),
